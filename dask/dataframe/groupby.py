@@ -1504,7 +1504,7 @@ class _GroupBy:
 
         if isinstance(self.obj, Series):
             result = result[result.columns[0]]
-        if self._slice:
+        if self._slice is not None:
             result = result[self._slice]
 
         return result
@@ -1539,11 +1539,11 @@ class _GroupBy:
         levels = _determine_levels(by)
 
         is_mask = any(is_series_like(s) for s in by)
-        if self._slice:
+        if self._slice is not None:
             if is_mask:
                 self.obj = self.obj[self._slice]
             else:
-                sliced_plus = list(self._slice) + by
+                sliced_plus = _as_list(self._slice) + by
                 self.obj = self.obj[sliced_plus]
 
         result = aca(
@@ -1562,7 +1562,7 @@ class _GroupBy:
 
         if isinstance(self.obj, Series):
             result = result[result.columns[0]]
-        if self._slice:
+        if self._slice is not None:
             result = result[self._slice]
         return result
 
@@ -1610,7 +1610,7 @@ class _GroupBy:
             else:
                 group_columns = set()
 
-            if self._slice:
+            if self._slice is not None:
                 # pandas doesn't exclude the grouping column in a SeriesGroupBy
                 # like df.groupby('a')['a'].agg(...)
                 non_group_columns = self._slice
@@ -2122,10 +2122,11 @@ class SeriesGroupBy(_GroupBy):
     @derived_from(pd.core.groupby.SeriesGroupBy)
     def aggregate(self, arg, split_every=None, split_out=1):
         result = super().aggregate(arg, split_every=split_every, split_out=split_out)
-        if self._slice:
+        if self._slice is not None:
             result = result[self._slice]
 
         if not isinstance(arg, (list, dict)) and isinstance(result, DataFrame):
+            assert len(result.columns) == 1
             result = result[result.columns[0]]
 
         return result
